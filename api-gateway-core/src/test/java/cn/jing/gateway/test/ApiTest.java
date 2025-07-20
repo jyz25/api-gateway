@@ -1,32 +1,31 @@
 package cn.jing.gateway.test;
 
-import cn.jing.gateway.session.SessionServer;
+import cn.jing.gateway.session.Configuration;
+import cn.jing.gateway.session.GenericReferenceSessionFactoryBuilder;
 import io.netty.channel.Channel;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class ApiTest {
 
     private final Logger logger = LoggerFactory.getLogger(ApiTest.class);
 
+    /**
+     * 测试：http://localhost:7397/sayHi
+     */
     @Test
-    public void test() throws ExecutionException, InterruptedException {
-        SessionServer server = new SessionServer();
+    public void test_GenericReference() throws InterruptedException, ExecutionException {
+        Configuration configuration = new Configuration();
+        configuration.addGenericReference("api-gateway-test", "cn.jing.gateway.rpc.IActivityBooth", "sayHi");
 
-        Future<Channel> future = Executors.newFixedThreadPool(2).submit(server);
-        Channel channel = future.get();
+        GenericReferenceSessionFactoryBuilder builder = new GenericReferenceSessionFactoryBuilder();
+        Future<Channel> future = builder.build(configuration);
 
-        if (null == channel) throw new RuntimeException("netty server start error channel is null");
-
-        while (!channel.isActive()) {
-            logger.info("NettyServer启动服务 ...");
-            Thread.sleep(500);
-        }
-        logger.info("NettyServer启动服务完成 {}", channel.localAddress());
+        logger.info("服务启动完成 {}", future.get().id());
 
         Thread.sleep(Long.MAX_VALUE);
     }

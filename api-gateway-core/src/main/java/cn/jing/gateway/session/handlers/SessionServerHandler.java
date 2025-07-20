@@ -1,6 +1,8 @@
 package cn.jing.gateway.session.handlers;
 
+import cn.jing.gateway.bind.IGenericReference;
 import cn.jing.gateway.session.BaseHandler;
+import cn.jing.gateway.session.Configuration;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import io.netty.channel.Channel;
@@ -14,14 +16,30 @@ public class SessionServerHandler extends BaseHandler<FullHttpRequest> {
 
     private final Logger logger = LoggerFactory.getLogger(SessionServerHandler.class);
 
+    private final Configuration configuration;
+
+    public SessionServerHandler(Configuration configuration) {
+        this.configuration = configuration;
+    }
+
     @Override
     protected void session(ChannelHandlerContext ctx, final Channel channel, FullHttpRequest request) {
         logger.info("网关接收请求 uri：{} method：{}", request.uri(), request.method());
 
+        // 返回信息控制：简单处理
+        String methodName = request.uri().substring(1);
+        if (methodName.equals("favicon.ico")) return;
+
         // 返回信息处理
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-        // 返回信息控制
-        response.content().writeBytes(JSON.toJSONBytes("你访问路径被jing的网关管理了 URI：" + request.uri(), SerializerFeature.PrettyFormat));
+
+        // 服务泛化调用
+        IGenericReference reference = configuration.getGenericReference("sayHi");
+        String result = reference.$invoke("test") + " " + System.currentTimeMillis();
+
+        // 设置回写数据
+        response.content().writeBytes(JSON.toJSONBytes(result, SerializerFeature.PrettyFormat));
+
         // 头部信息设置
         HttpHeaders heads = response.headers();
         // 返回内容类型
