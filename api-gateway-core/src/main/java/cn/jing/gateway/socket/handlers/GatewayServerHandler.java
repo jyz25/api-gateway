@@ -1,8 +1,9 @@
-package cn.jing.gateway.session.handlers;
+package cn.jing.gateway.socket.handlers;
 
 import cn.jing.gateway.bind.IGenericReference;
-import cn.jing.gateway.session.BaseHandler;
-import cn.jing.gateway.session.Configuration;
+import cn.jing.gateway.session.GatewaySession;
+import cn.jing.gateway.session.defaults.DefaultGatewaySessionFactory;
+import cn.jing.gateway.socket.BaseHandler;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import io.netty.channel.Channel;
@@ -11,15 +12,14 @@ import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// 会话服务处理器
-public class SessionServerHandler extends BaseHandler<FullHttpRequest> {
+public class GatewayServerHandler extends BaseHandler<FullHttpRequest> {
 
-    private final Logger logger = LoggerFactory.getLogger(SessionServerHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(GatewayServerHandler.class);
 
-    private final Configuration configuration;
+    private final DefaultGatewaySessionFactory gatewaySessionFactory;
 
-    public SessionServerHandler(Configuration configuration) {
-        this.configuration = configuration;
+    public GatewayServerHandler(DefaultGatewaySessionFactory gatewaySessionFactory) {
+        this.gatewaySessionFactory = gatewaySessionFactory;
     }
 
     @Override
@@ -27,15 +27,15 @@ public class SessionServerHandler extends BaseHandler<FullHttpRequest> {
         logger.info("网关接收请求 uri：{} method：{}", request.uri(), request.method());
 
         // 返回信息控制：简单处理
-        String methodName = request.uri().substring(1);
-        if (methodName.equals("favicon.ico")) return;
+        String uri = request.uri();
+        if (uri.equals("/favicon.ico")) return;
+
+        GatewaySession gatewaySession = gatewaySessionFactory.openSession();
+        IGenericReference reference = gatewaySession.getMapper(uri);
+        String result = reference.$invoke("test") + " " + System.currentTimeMillis();
 
         // 返回信息处理
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-
-        // 服务泛化调用
-        IGenericReference reference = configuration.getGenericReference("sayHi");
-        String result = reference.$invoke("test") + " " + System.currentTimeMillis();
 
         // 设置回写数据
         response.content().writeBytes(JSON.toJSONBytes(result, SerializerFeature.PrettyFormat));

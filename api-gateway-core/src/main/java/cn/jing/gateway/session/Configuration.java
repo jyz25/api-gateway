@@ -1,7 +1,8 @@
 package cn.jing.gateway.session;
 
-import cn.jing.gateway.bind.GenericReferenceRegistry;
 import cn.jing.gateway.bind.IGenericReference;
+import cn.jing.gateway.bind.MapperRegistry;
+import cn.jing.gateway.mapping.HttpStatement;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
@@ -11,11 +12,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * description: 会话生命周期配置类
+ * 配置中心 - 网关的"大脑"，存储所有核心配置信息：
+ * - 路由规则管理 ：通过 httpStatements 哈希表维护URI到 `HttpStatement` 的映射
+ * - Dubbo配置集成 ：管理 `ApplicationConfig` 、 `RegistryConfig` 和 `ReferenceConfig`
+ * - 映射器注册 ：通过 `MapperRegistry` 管理URI与服务的绑定关系
  */
 public class Configuration {
 
-    private final GenericReferenceRegistry registry = new GenericReferenceRegistry(this);
+    private final MapperRegistry mapperRegistry = new MapperRegistry(this);
+
+    private final Map<String, HttpStatement> httpStatements = new HashMap<>();
 
     // RPC 应用服务配置项 api-gateway-test
     private final Map<String, ApplicationConfig> applicationConfigMap = new HashMap<>();
@@ -56,12 +62,20 @@ public class Configuration {
         return referenceConfigMap.get(interfaceName);
     }
 
-    public void addGenericReference(String application, String interfaceName, String methodName) {
-        registry.addGenericReference(application, interfaceName, methodName);
+    public void addMapper(HttpStatement httpStatement) {
+        mapperRegistry.addMapper(httpStatement);
     }
 
-    public IGenericReference getGenericReference(String methodName) {
-        return registry.getGenericReference(methodName);
+    public IGenericReference getMapper(String uri, GatewaySession gatewaySession) {
+        return mapperRegistry.getMapper(uri, gatewaySession);
+    }
+
+    public void addHttpStatement(HttpStatement httpStatement) {
+        httpStatements.put(httpStatement.getUri(), httpStatement);
+    }
+
+    public HttpStatement getHttpStatement(String uri) {
+        return httpStatements.get(uri);
     }
 
 }

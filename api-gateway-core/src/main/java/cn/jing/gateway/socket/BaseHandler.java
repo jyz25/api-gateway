@@ -1,10 +1,9 @@
-package cn.jing.gateway.session;
+package cn.jing.gateway.socket;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-// 数据处理器基类
 public abstract class BaseHandler<T> extends SimpleChannelInboundHandler<T> {
 
     @Override

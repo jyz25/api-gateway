@@ -1,6 +1,7 @@
-package cn.jing.gateway.session;
+package cn.jing.gateway.socket;
 
-import cn.jing.gateway.session.handlers.SessionServerHandler;
+import cn.jing.gateway.session.defaults.DefaultGatewaySessionFactory;
+import cn.jing.gateway.socket.handlers.GatewayServerHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -8,13 +9,13 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 
-// 会话管道初始化类
-public class SessionChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final Configuration configuration;
+public class GatewayChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    public SessionChannelInitializer(Configuration configuration) {
-        this.configuration = configuration;
+    private final DefaultGatewaySessionFactory gatewaySessionFactory;
+
+    public GatewayChannelInitializer(DefaultGatewaySessionFactory gatewaySessionFactory) {
+        this.gatewaySessionFactory = gatewaySessionFactory;
     }
 
     @Override
@@ -23,7 +24,7 @@ public class SessionChannelInitializer extends ChannelInitializer<SocketChannel>
         line.addLast(new HttpRequestDecoder());
         line.addLast(new HttpResponseEncoder());
         line.addLast(new HttpObjectAggregator(1024 * 1024));
-        line.addLast(new SessionServerHandler(configuration));
+        line.addLast(new GatewayServerHandler(gatewaySessionFactory));
     }
 
 }
